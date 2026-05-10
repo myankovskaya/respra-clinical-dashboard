@@ -1,0 +1,1854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Respra — Diagnostic Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --teal:        #0D5C63;
+      --teal-hover:  #0a4850;
+      --teal-light:  #1a8a94;
+      --mint:        #3DBFB8;
+      --mint-soft:   #A8E6E2;
+      --mint-bg:     #E8F8F7;
+      --mint-grad:   linear-gradient(140deg,#c2eeeb 0%,#e4f7f5 45%,#f2fbfa 100%);
+      --white:       #FFFFFF;
+      --grey-bg:     #F8FAFB;
+      --grey-light:  #F1F3F5;
+      --grey-border: #E4E7EB;
+      --grey-text:   #6B7280;
+      --text-dark:   #0F1923;
+      --text-mid:    #374151;
+      --red:         #DC2626;
+      --red-bg:      #FEF2F2;
+      --amber:       #D97706;
+      --amber-bg:    #FFFBEB;
+      --green:       #059669;
+      --green-bg:    #ECFDF5;
+      --shadow-xs:   0 1px 2px rgba(0,0,0,.06);
+      --shadow-sm:   0 1px 6px rgba(0,0,0,.08);
+      --shadow-md:   0 4px 20px rgba(0,0,0,.09);
+      --shadow-lg:   0 8px 40px rgba(0,0,0,.12);
+      --r:           12px;
+      --r-sm:        8px;
+      --r-pill:      9999px;
+    }
+
+    *{margin:0;padding:0;box-sizing:border-box;}
+
+    /* ─── HEADING FONT ───────────────────────────────────── */
+    h1,h2,h3,
+    .nav-logo,
+    .card-title,
+    .analysis-title,
+    .results-title,
+    .dash-title,
+    .dev-title,
+    .alert-title,
+    .ns-title,
+    .table-title,
+    .ring-time,
+    .dev-id,
+    .alert-pid,
+    .alert-disease,
+    .stat-val{
+      font-family:'Atkinson Hyperlegible',sans-serif;
+    }
+
+    body{
+      font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+      background:#F0FAF7;
+      color:var(--text-dark);
+      min-height:100vh;
+      overflow-x:hidden;
+    }
+
+    /* ─── NAV ─────────────────────────────────────────────── */
+    nav{
+      position:fixed;top:0;left:0;right:0;z-index:200;
+      height:64px;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:0 48px;
+      background:var(--teal);
+    }
+    .nav-logo{
+      font-size:19px;font-weight:800;
+      color:var(--white);letter-spacing:-.5px;
+      user-select:none;
+    }
+    .nav-switcher{
+      display:flex;gap:3px;
+      background:rgba(255,255,255,.13);
+      border-radius:var(--r-pill);
+      padding:4px;
+    }
+    .nav-btn{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:8px 20px;
+      border:none;border-radius:var(--r-pill);
+      font:600 13px/1 'Inter',sans-serif;
+      color:rgba(255,255,255,.72);
+      background:transparent;
+      cursor:pointer;
+      transition:all .2s;
+    }
+    .nav-btn.active{
+      background:var(--white);color:var(--teal);
+      box-shadow:var(--shadow-sm);
+    }
+    .nav-btn:hover:not(.active){color:var(--white);background:rgba(255,255,255,.18);}
+
+    /* ─── LAYOUT ──────────────────────────────────────────── */
+    main{padding-top:64px;min-height:100vh;}
+    .view{display:none;min-height:calc(100vh - 64px);}
+    .view.active{display:block;}
+
+    /* ─── FADE/SLIDE ANIMATIONS ───────────────────────────── */
+    @keyframes fadeUp{
+      from{opacity:0;transform:translateY(22px);}
+      to{opacity:1;transform:translateY(0);}
+    }
+    @keyframes fadeIn{
+      from{opacity:0;}to{opacity:1;}
+    }
+    .anim-up{animation:fadeUp .4s cubic-bezier(.4,0,.2,1) both;}
+
+    /* ══════════════════════════════════════════════════════════
+       CLINICAL VIEW
+    ══════════════════════════════════════════════════════════ */
+    #view-clinical{}
+
+    /* Centered wrapper for steps 1 & 2 */
+    #clinical-centered{
+      display:flex;align-items:center;justify-content:center;
+      min-height:calc(100vh - 64px);
+      padding:48px 24px;
+    }
+
+    .step{display:none;width:100%;max-width:540px;}
+    .step.active{display:block;}
+
+    /* ── STEP 1 : SETUP ────────────────────────────────────── */
+    .card{
+      background:var(--white);
+      border:1px solid var(--grey-border);
+      border-radius:20px;
+      padding:48px;
+      box-shadow:var(--shadow-lg);
+    }
+
+    .badge-pill{
+      display:inline-flex;align-items:center;gap:7px;
+      background:var(--mint-bg);color:var(--teal);
+      font:600 11px/1 'Inter',sans-serif;
+      letter-spacing:.6px;text-transform:uppercase;
+      padding:6px 14px;border-radius:var(--r-pill);
+      margin-bottom:18px;
+    }
+    .badge-pill::before{content:'';width:6px;height:6px;background:var(--teal);border-radius:50%;}
+
+    .card-title{font-size:28px;font-weight:800;line-height:1.25;margin-bottom:8px;}
+    .card-sub{font-size:14px;color:var(--grey-text);line-height:1.65;margin-bottom:36px;}
+
+    .field-label{
+      display:block;
+      font:600 11px/1 'Inter',sans-serif;
+      letter-spacing:.6px;text-transform:uppercase;
+      color:var(--text-mid);
+      margin-bottom:9px;
+    }
+    .field-input{
+      width:100%;
+      padding:14px 18px;
+      border:1.5px solid var(--grey-border);
+      border-radius:var(--r-sm);
+      font:400 15px/1 'Inter',sans-serif;
+      color:var(--text-dark);
+      background:var(--white);
+      transition:border-color .2s,box-shadow .2s;
+      outline:none;
+      margin-bottom:20px;
+    }
+    .field-input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(13,92,99,.09);}
+    .field-input::placeholder{color:#9CA3AF;}
+
+    .check-wrap{
+      display:flex;align-items:flex-start;gap:13px;
+      padding:18px;
+      background:var(--mint-bg);
+      border:1.5px solid var(--mint-soft);
+      border-radius:var(--r-sm);
+      cursor:pointer;
+    }
+    .check-wrap input[type=checkbox]{width:18px;height:18px;margin-top:2px;accent-color:var(--teal);flex-shrink:0;cursor:pointer;}
+    .check-text{font-size:14px;line-height:1.55;color:var(--text-mid);cursor:pointer;}
+    .check-text strong{color:var(--teal);}
+
+    .btn-primary{
+      display:flex;align-items:center;justify-content:center;gap:8px;
+      width:100%;padding:16px 32px;
+      background:var(--teal);color:var(--white);
+      border:none;border-radius:var(--r-pill);
+      font:600 15px/1 'Inter',sans-serif;
+      cursor:pointer;
+      transition:background .2s,transform .15s,box-shadow .2s;
+      margin-top:32px;letter-spacing:.2px;
+    }
+    .btn-primary:hover:not(:disabled){
+      background:var(--teal-hover);
+      transform:translateY(-2px);
+      box-shadow:0 6px 24px rgba(13,92,99,.28);
+    }
+    .btn-primary:active:not(:disabled){transform:translateY(0);}
+    .btn-primary:disabled{opacity:.4;cursor:not-allowed;}
+
+    /* ── STEP 2 : ANALYSIS ────────────────────────────────── */
+    .analysis-card{
+      background:var(--white);
+      border:1px solid var(--grey-border);
+      border-radius:20px;
+      padding:56px 48px;
+      box-shadow:var(--shadow-lg);
+      text-align:center;
+    }
+    .analysis-title{font-size:22px;font-weight:700;margin-bottom:6px;}
+    .analysis-sub{font-size:14px;color:var(--grey-text);margin-bottom:44px;}
+
+    /* Circular progress */
+    .ring-wrap{position:relative;width:200px;height:200px;margin:0 auto 40px;}
+    .ring-svg{transform:rotate(-90deg);}
+    .ring-bg{fill:none;stroke:var(--grey-light);stroke-width:7;}
+    .ring-fill{
+      fill:none;stroke:var(--teal);stroke-width:7;
+      stroke-linecap:round;
+      stroke-dasharray:553;stroke-dashoffset:553;
+      transition:stroke-dashoffset .9s linear;
+    }
+    .ring-center{
+      position:absolute;top:50%;left:50%;
+      transform:translate(-50%,-50%);
+      text-align:center;
+    }
+    .ring-time{
+      font-size:38px;font-weight:800;color:var(--teal);
+      line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-1px;
+    }
+    .ring-lbl{font-size:10px;color:var(--grey-text);text-transform:uppercase;letter-spacing:1px;margin-top:5px;}
+
+    /* Waveform */
+    .wave-wrap{width:100%;max-width:380px;margin:0 auto;}
+    #waveform{width:100%;height:72px;display:block;}
+
+    .capture-line{
+      display:flex;align-items:center;justify-content:center;
+      gap:8px;margin-top:20px;
+      font-size:13px;color:var(--grey-text);
+    }
+    .cap-dot{width:7px;height:7px;background:var(--mint);border-radius:50%;animation:blink 1.4s ease-in-out infinite;}
+    @keyframes blink{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.75);}}
+
+    .demo-skip{
+      margin-top:22px;
+      font-size:12px;color:var(--grey-text);
+      cursor:pointer;text-decoration:underline;text-underline-offset:3px;
+      opacity:.7;
+      background:none;border:none;font-family:'Inter',sans-serif;
+    }
+    .demo-skip:hover{opacity:1;color:var(--teal);}
+
+    /* ── STEP 3 : RESULTS ────────────────────────────────── */
+    #step-results{
+      display:none;
+      min-height:calc(100vh - 64px);
+      padding:52px 40px;
+      position:relative;
+      overflow:hidden;
+    }
+    .results-mint-bg{
+      position:absolute;top:0;right:0;
+      width:55%;height:130%;
+      background:var(--mint-grad);
+      opacity:.45;
+      pointer-events:none;
+      border-radius:0 0 0 60%;
+      will-change:transform;
+    }
+    .results-inner{position:relative;max-width:1100px;margin:0 auto;}
+
+    .results-topbar{
+      display:flex;align-items:flex-start;justify-content:space-between;
+      flex-wrap:wrap;gap:16px;
+      margin-bottom:36px;
+    }
+    .results-title{font-size:26px;font-weight:800;margin-bottom:5px;}
+    .results-meta{font-size:13px;color:var(--grey-text);}
+    .results-meta b{color:var(--text-mid);}
+
+    .btn-ghost{
+      padding:12px 22px;
+      background:transparent;color:var(--teal);
+      border:1.5px solid var(--teal);border-radius:var(--r-pill);
+      font:600 13px/1 'Inter',sans-serif;
+      cursor:pointer;transition:background .2s;
+    }
+    .btn-ghost:hover{background:var(--mint-bg);}
+
+    /* Disease grid */
+    .disease-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(290px,1fr));
+      gap:14px;
+      margin-bottom:36px;
+    }
+    .d-card{
+      background:var(--white);
+      border:1px solid var(--grey-border);
+      border-radius:var(--r);
+      padding:20px 22px;
+      box-shadow:var(--shadow-xs);
+      transition:box-shadow .2s,transform .2s;
+      animation:fadeUp .5s cubic-bezier(.4,0,.2,1) both;
+    }
+    .d-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);}
+    .d-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+    .d-name{font-size:14px;font-weight:600;}
+    .badge{
+      font:700 10px/1 'Inter',sans-serif;
+      letter-spacing:.6px;text-transform:uppercase;
+      padding:4px 10px;border-radius:var(--r-pill);
+    }
+    .b-flag{background:var(--red-bg);color:var(--red);}
+    .b-watch{background:var(--amber-bg);color:var(--amber);}
+    .b-clear{background:var(--green-bg);color:var(--green);}
+
+    .conf-row{display:flex;align-items:center;gap:11px;}
+    .conf-track{flex:1;height:7px;background:var(--grey-light);border-radius:var(--r-pill);overflow:hidden;}
+    .conf-fill{height:100%;border-radius:var(--r-pill);width:0;transition:width 1.1s cubic-bezier(.4,0,.2,1);}
+    .cf-flag{background:linear-gradient(90deg,#b91c1c,#ef4444);}
+    .cf-watch{background:linear-gradient(90deg,#b45309,#f59e0b);}
+    .cf-clear{background:linear-gradient(90deg,#047857,#10b981);}
+    .conf-pct{font:700 13px/1 'Inter',sans-serif;min-width:34px;text-align:right;font-variant-numeric:tabular-nums;}
+
+    /* Next Steps */
+    .next-section{
+      background:var(--white);
+      border:1px solid var(--grey-border);
+      border-radius:var(--r);
+      padding:28px 30px;
+      margin-bottom:22px;
+      box-shadow:var(--shadow-xs);
+    }
+    .ns-title{font-size:15px;font-weight:700;margin-bottom:3px;}
+    .ns-sub{font-size:13px;color:var(--grey-text);margin-bottom:20px;}
+    .ns-item{
+      display:flex;align-items:flex-start;gap:14px;
+      padding:14px 0;
+      border-bottom:1px solid var(--grey-border);
+    }
+    .ns-item:last-child{border-bottom:none;padding-bottom:0;}
+    .ns-icon{
+      width:36px;height:36px;
+      border-radius:10px;flex-shrink:0;
+      display:flex;align-items:center;justify-content:center;
+      font-size:16px;
+    }
+    .ni-flag{background:var(--red-bg);}
+    .ni-watch{background:var(--amber-bg);}
+    .ns-body{}
+    .ns-disease{font-size:14px;font-weight:600;margin-bottom:3px;display:flex;align-items:center;gap:7px;}
+    .ns-action{font-size:13px;color:var(--grey-text);line-height:1.55;}
+
+    .actions-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+    .btn-teal{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:13px 26px;
+      background:var(--teal);color:var(--white);
+      border:none;border-radius:var(--r-pill);
+      font:600 14px/1 'Inter',sans-serif;
+      cursor:pointer;
+      transition:background .2s,transform .15s,box-shadow .2s;
+    }
+    .btn-teal:hover{
+      background:var(--teal-hover);
+      transform:translateY(-2px);
+      box-shadow:0 5px 20px rgba(13,92,99,.28);
+    }
+    .btn-teal:active{transform:translateY(0);}
+
+    /* ══════════════════════════════════════════════════════════
+       POPULATION DASHBOARD
+    ══════════════════════════════════════════════════════════ */
+    .dash-inner{max-width:1200px;margin:0 auto;padding:44px 48px;}
+    .dash-title{font-size:26px;font-weight:800;margin-bottom:4px;}
+    .dash-sub{font-size:14px;color:var(--grey-text);margin-bottom:36px;}
+
+    /* Stats */
+    .stat-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px;}
+    .stat-card{
+      background:var(--white);
+      border:1px solid var(--grey-border);
+      border-radius:var(--r);
+      padding:22px 24px;
+      box-shadow:var(--shadow-xs);
+    }
+    .stat-lbl{font:600 11px/1 'Inter',sans-serif;letter-spacing:.6px;text-transform:uppercase;color:var(--grey-text);margin-bottom:9px;}
+    .stat-val{font-size:34px;font-weight:900;color:var(--teal);line-height:1;font-variant-numeric:tabular-nums;transition:all .3s;}
+    .stat-chg{font-size:12px;color:var(--grey-text);margin-top:5px;}
+    .chg-up{color:var(--red);}
+    .chg-dn{color:var(--green);}
+
+    /* Filter Bar */
+    .filter-bar{
+      display:flex;align-items:center;gap:10px;
+      margin-bottom:22px;flex-wrap:wrap;
+    }
+    .filter-lbl{font:600 13px/1 'Inter',sans-serif;color:var(--text-mid);}
+    .f-select{
+      padding:9px 34px 9px 16px;
+      border:1.5px solid var(--grey-border);
+      border-radius:var(--r-pill);
+      font:400 13px/1 'Inter',sans-serif;
+      color:var(--text-mid);background:var(--white);
+      cursor:pointer;outline:none;
+      appearance:none;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;background-position:right 13px center;
+      transition:border-color .2s;
+    }
+    .f-select:focus{border-color:var(--teal);}
+    .f-pills{display:flex;gap:5px;}
+    .f-pill{
+      padding:8px 16px;
+      border:1.5px solid var(--grey-border);
+      border-radius:var(--r-pill);
+      font:500 13px/1 'Inter',sans-serif;
+      color:var(--grey-text);background:var(--white);
+      cursor:pointer;transition:all .2s;
+    }
+    .f-pill.active{background:var(--teal);color:var(--white);border-color:var(--teal);}
+    .f-pill:hover:not(.active){border-color:var(--teal);color:var(--teal);}
+
+    /* Map */
+    .map-box{
+      background:var(--white);
+      border:1px solid var(--grey-border);
+      border-radius:var(--r);
+      overflow:hidden;
+      box-shadow:var(--shadow-sm);
+      margin-bottom:22px;
+    }
+    .map-img-wrap{position:relative;line-height:0;}
+    .map-bg-img{width:100%;display:block;}
+    .marker-svg{
+      position:absolute;top:0;left:0;
+      width:100%;height:100%;
+      overflow:visible;
+    }
+    .map-marker-g{cursor:pointer;}
+    .map-marker-g:hover .m-hover{opacity:.7;}
+    .m-hover{transition:opacity .15s;}
+    .map-tip-div{
+      position:absolute;
+      background:rgba(15,25,35,.9);color:var(--white);
+      padding:9px 14px;border-radius:9px;
+      font:500 12px/1.55 'Inter',sans-serif;
+      white-space:nowrap;pointer-events:none;
+      opacity:0;transition:opacity .15s;
+      transform:translate(-50%,-115%);z-index:50;
+    }
+    .map-tip-div::after{
+      content:'';position:absolute;top:100%;left:50%;
+      transform:translateX(-50%);
+      border:5px solid transparent;
+      border-top-color:rgba(15,25,35,.9);
+    }
+
+    .map-legend{
+      padding:14px 20px;
+      border-top:1px solid var(--grey-border);
+      display:flex;align-items:center;gap:22px;flex-wrap:wrap;
+    }
+    .legend-lbl{font:600 11px/1 'Inter',sans-serif;letter-spacing:.6px;text-transform:uppercase;color:var(--grey-text);}
+    .legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--grey-text);}
+
+    /* Table */
+    .table-box{
+      background:var(--white);
+      border:1px solid var(--grey-border);
+      border-radius:var(--r);
+      overflow:hidden;
+      box-shadow:var(--shadow-xs);
+      margin-bottom:22px;
+    }
+    .table-head-row{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:16px 24px;
+      border-bottom:1px solid var(--grey-border);
+    }
+    .table-title{font:700 15px/1 'Inter',sans-serif;}
+    .table-count{font-size:12px;color:var(--grey-text);}
+    .table-scroll{max-height:300px;overflow-y:auto;}
+    .table-scroll::-webkit-scrollbar{width:5px;}
+    .table-scroll::-webkit-scrollbar-track{background:var(--grey-light);}
+    .table-scroll::-webkit-scrollbar-thumb{background:var(--grey-border);border-radius:3px;}
+
+    .dtable{width:100%;border-collapse:collapse;}
+    .dtable th{
+      text-align:left;padding:11px 24px;
+      font:700 11px/1 'Inter',sans-serif;
+      letter-spacing:.5px;text-transform:uppercase;
+      color:var(--grey-text);
+      background:var(--grey-bg);
+      border-bottom:1px solid var(--grey-border);
+    }
+    .dtable td{
+      padding:13px 24px;
+      font-size:14px;color:var(--text-mid);
+      border-bottom:1px solid var(--grey-border);
+      transition:background .15s;
+    }
+    .dtable tr:last-child td{border-bottom:none;}
+    .dtable tbody tr:hover td{background:var(--grey-bg);}
+    .td-loc{font-weight:600;color:var(--text-dark);}
+
+    .mini-bar-row{display:flex;align-items:center;gap:9px;}
+    .mini-track{flex:1;max-width:90px;height:5px;background:var(--grey-light);border-radius:var(--r-pill);overflow:hidden;}
+    .mini-fill{height:100%;background:var(--teal);border-radius:var(--r-pill);}
+    .mini-pct{font:600 13px/1 'Inter',sans-serif;color:var(--text-dark);}
+
+    .outbreak-pill{
+      display:inline-flex;align-items:center;gap:5px;
+      background:var(--red-bg);color:var(--red);
+      font:700 10px/1 'Inter',sans-serif;
+      letter-spacing:.6px;text-transform:uppercase;
+      padding:5px 10px;border-radius:var(--r-pill);
+      animation:outbreakGlow 2s ease-in-out infinite;
+    }
+    @keyframes outbreakGlow{
+      0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.3);}
+      50%{box-shadow:0 0 0 5px rgba(220,38,38,0);}
+    }
+    .ob-dot{width:5px;height:5px;background:var(--red);border-radius:50%;animation:blink 1s ease-in-out infinite;}
+
+    .dash-footer{display:flex;justify-content:flex-end;}
+
+    /* ─── TOAST ──────────────────────────────────────────── */
+    .toast{
+      position:fixed;bottom:30px;right:30px;z-index:9999;
+      display:flex;align-items:center;gap:12px;
+      background:rgba(15,25,35,.94);
+      color:var(--white);
+      padding:15px 22px;
+      border-radius:13px;
+      font:500 14px/1.4 'Inter',sans-serif;
+      box-shadow:var(--shadow-lg);
+      max-width:380px;
+      opacity:0;transform:translateY(14px);
+      transition:all .3s cubic-bezier(.4,0,.2,1);
+      pointer-events:none;
+    }
+    .toast.show{opacity:1;transform:translateY(0);}
+    .toast-ico{
+      width:28px;height:28px;flex-shrink:0;
+      background:var(--teal);
+      border-radius:8px;
+      display:flex;align-items:center;justify-content:center;
+    }
+
+    /* ─── RESPONSIVE ─────────────────────────────────────── */
+    @media(max-width:900px){
+      nav{padding:0 20px;}
+      .nav-btn{padding:7px 14px;font-size:12px;}
+      .card{padding:32px 24px;}
+      .disease-grid{grid-template-columns:1fr;}
+      .stat-bar{grid-template-columns:1fr;}
+      .dash-inner{padding:28px 16px;}
+      #step-results{padding:32px 16px;}
+      .results-topbar{flex-direction:column;}
+      .dev-inner{padding:28px 16px;}
+      .alert-inner{padding:28px 16px;}
+      .dev-summary{grid-template-columns:1fr;}
+      .dev-grid{grid-template-columns:1fr;}
+    }
+    @media(max-width:600px){
+      .filter-bar{flex-direction:column;align-items:flex-start;}
+      .f-pills{flex-wrap:wrap;}
+      .alert-topbar{flex-direction:column;align-items:flex-start;}
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       DEVICE MANAGEMENT
+    ══════════════════════════════════════════════════════════ */
+    .dev-inner{max-width:1200px;margin:0 auto;padding:44px 48px;}
+    .dev-title{font-size:26px;font-weight:800;margin-bottom:4px;}
+    .dev-sub{font-size:14px;color:var(--grey-text);margin-bottom:36px;}
+    .dev-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;}
+    .dev-actions{display:flex;justify-content:flex-end;margin-bottom:22px;}
+    .dev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px;margin-bottom:32px;}
+    .dev-card{
+      background:var(--white);border:1px solid var(--grey-border);
+      border-radius:var(--r);padding:20px 22px;
+      box-shadow:var(--shadow-xs);cursor:pointer;
+      transition:box-shadow .2s,transform .2s,border-color .2s;
+      animation:fadeUp .4s cubic-bezier(.4,0,.2,1) both;
+    }
+    .dev-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);}
+    .dev-card.expanded{border-color:var(--teal);box-shadow:0 0 0 3px rgba(13,92,99,.1),var(--shadow-sm);}
+    .dev-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;}
+    .dev-id{font-size:15px;font-weight:700;color:var(--text-dark);margin-bottom:3px;}
+    .dev-dept{font-size:12px;color:var(--grey-text);}
+    .dev-status{display:flex;align-items:center;gap:6px;font:600 12px/1 'Inter',sans-serif;}
+    .dev-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+    .dot-online{background:#059669;box-shadow:0 0 0 3px rgba(5,150,105,.18);}
+    .dot-offline{background:#DC2626;box-shadow:0 0 0 3px rgba(220,38,38,.18);}
+    .dot-low{background:#D97706;box-shadow:0 0 0 3px rgba(217,119,6,.18);}
+    .status-online{color:var(--green);}
+    .status-offline{color:var(--red);}
+    .status-low{color:var(--amber);}
+    .dev-card-stats{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+    .dev-stat{display:flex;flex-direction:column;gap:3px;}
+    .dev-stat-val{font:700 14px/1 'Atkinson Hyperlegible',sans-serif;color:var(--text-dark);}
+    .dev-stat-lbl{font-size:11px;color:var(--grey-text);}
+    .cal-tag{font:700 10px/1 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;padding:4px 10px;border-radius:var(--r-pill);margin-left:auto;}
+    .cal-ok{background:var(--green-bg);color:var(--green);}
+    .cal-overdue{background:var(--red-bg);color:var(--red);}
+    .dev-expand-hint{font-size:11px;color:var(--grey-text);margin-top:12px;text-align:center;opacity:.6;}
+    .dev-log{margin-top:16px;padding-top:16px;border-top:1px solid var(--grey-border);animation:fadeIn .2s ease both;}
+    .dev-log-title{font:600 11px/1 'Inter',sans-serif;letter-spacing:.6px;text-transform:uppercase;color:var(--grey-text);margin-bottom:10px;}
+    .dev-log-item{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--grey-border);font-size:13px;}
+    .dev-log-item:last-child{border-bottom:none;padding-bottom:0;}
+    .dev-log-time{font-variant-numeric:tabular-nums;color:var(--grey-text);min-width:38px;flex-shrink:0;}
+    .dev-log-pid{color:var(--text-mid);}
+    .dev-log-dis{font:600 11px/1 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;padding:3px 8px;border-radius:var(--r-pill);margin-left:auto;white-space:nowrap;}
+    .dis-flag{background:var(--red-bg);color:var(--red);}
+    .dis-watch{background:var(--amber-bg);color:var(--amber);}
+    .dis-clear{font-size:11px;color:var(--grey-text);margin-left:auto;}
+
+    /* Modal */
+    .modal-overlay{
+      position:fixed;inset:0;z-index:500;
+      background:rgba(15,25,35,.4);backdrop-filter:blur(5px);
+      display:flex;align-items:center;justify-content:center;
+      opacity:0;pointer-events:none;transition:opacity .25s;
+    }
+    .modal-overlay.open{opacity:1;pointer-events:all;}
+    .modal-box{
+      background:var(--white);border-radius:20px;
+      padding:40px;width:100%;max-width:460px;
+      box-shadow:var(--shadow-lg);
+      transform:translateY(24px);
+      transition:transform .28s cubic-bezier(.4,0,.2,1);
+    }
+    .modal-overlay.open .modal-box{transform:translateY(0);}
+    .modal-title{font:700 22px/1.2 'Atkinson Hyperlegible',sans-serif;margin-bottom:6px;}
+    .modal-sub{font-size:14px;color:var(--grey-text);margin-bottom:28px;}
+    .modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:28px;}
+
+    /* ══════════════════════════════════════════════════════════
+       ALERT FEED
+    ══════════════════════════════════════════════════════════ */
+    .alert-inner{max-width:860px;margin:0 auto;padding:44px 48px;}
+    .alert-title{font-size:26px;font-weight:800;margin-bottom:4px;}
+    .alert-sub{font-size:14px;color:var(--grey-text);margin-bottom:28px;}
+    .alert-topbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;}
+    .alert-filters{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .alert-feed{display:flex;flex-direction:column;gap:10px;}
+    .alert-item{
+      display:flex;align-items:stretch;
+      background:var(--white);border:1px solid var(--grey-border);
+      border-radius:var(--r);overflow:hidden;
+      box-shadow:var(--shadow-xs);
+      transition:opacity .35s,box-shadow .2s;
+    }
+    .alert-item:not(.ack):hover{box-shadow:var(--shadow-md);}
+    .alert-item.ack{opacity:.4;}
+    .alert-bar{width:4px;flex-shrink:0;}
+    .alert-item.flag .alert-bar{background:var(--red);}
+    .alert-item.watch .alert-bar{background:var(--amber);}
+    .alert-body{flex:1;padding:15px 18px;}
+    .alert-row1{display:flex;align-items:center;margin-bottom:6px;}
+    .alert-pid{font-size:13px;font-weight:700;color:var(--text-dark);}
+    .alert-time{font-size:12px;color:var(--grey-text);margin-left:auto;}
+    .alert-row2{display:flex;align-items:center;gap:10px;margin-bottom:5px;}
+    .alert-disease{font:600 15px/1 'Inter',sans-serif;color:var(--text-dark);}
+    .alert-pct{font-size:14px;font-weight:700;color:var(--text-mid);font-variant-numeric:tabular-nums;}
+    .alert-row3{font-size:12px;color:var(--grey-text);}
+    .alert-dept-tag{display:inline-flex;align-items:center;gap:5px;}
+    .alert-dept-tag::before{content:'';width:6px;height:6px;background:var(--mint);border-radius:50%;display:inline-block;}
+    .alert-ack-col{flex-shrink:0;padding:0 20px;display:flex;align-items:center;border-left:1px solid var(--grey-border);}
+    .ack-btn{
+      padding:8px 16px;background:transparent;color:var(--teal);
+      border:1.5px solid var(--teal);border-radius:var(--r-pill);
+      font:600 12px/1 'Inter',sans-serif;cursor:pointer;
+      transition:all .2s;white-space:nowrap;
+    }
+    .ack-btn:hover{background:var(--mint-bg);}
+    .ack-btn.done{background:var(--grey-light);color:var(--grey-text);border-color:var(--grey-border);pointer-events:none;}
+    @keyframes alertPulse{
+      0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.22);}
+      50%{box-shadow:0 0 0 7px rgba(220,38,38,0);}
+    }
+    .alert-item.new-pulse{animation:alertPulse 2.2s ease-in-out infinite;}
+
+    /* Nav alert badge */
+    .alert-badge{
+      display:inline-flex;align-items:center;justify-content:center;
+      min-width:17px;height:17px;
+      background:var(--red);color:#fff;
+      font:700 10px/1 'Inter',sans-serif;
+      border-radius:99px;padding:0 5px;margin-left:5px;
+      vertical-align:middle;
+    }
+    .alert-badge.hidden{display:none;}
+
+    /* ─── ICON HELPERS ───────────────────────────────────── */
+    .nav-icon{width:13px;height:13px;flex-shrink:0;}
+    .stat-icon{width:13px;height:13px;vertical-align:-2px;margin-right:4px;color:var(--grey-text);}
+    .dis-icon{width:15px;height:15px;flex-shrink:0;}
+    .dis-icon.flag{color:var(--red);}
+    .dis-icon.watch{color:var(--amber);}
+    .dis-icon.clear{color:var(--grey-text);}
+    .d-name{display:inline-flex;align-items:center;gap:7px;}
+    .table-dis-icon{width:13px;height:13px;vertical-align:-2px;margin-right:5px;color:var(--grey-text);}
+    .alert-dis-icon{width:13px;height:13px;vertical-align:-2px;margin-right:3px;}
+    .alert-dis-icon.flag{color:var(--red);}
+    .alert-dis-icon.watch{color:var(--amber);}
+
+    /* ─── DISEASE DESCRIPTION ────────────────────────────── */
+    .d-desc{font-size:12px;color:var(--grey-text);line-height:1.55;margin-top:9px;}
+
+    /* ─── ALERT ACTION LINE ──────────────────────────────── */
+    .alert-action{font-size:12px;color:var(--text-mid);line-height:1.45;margin-top:6px;padding-top:6px;border-top:1px solid var(--grey-border);}
+
+    /* ─── RESULTS LEGEND ─────────────────────────────────── */
+    .results-legend{
+      background:var(--white);
+      border:1px solid var(--grey-border);
+      border-radius:var(--r);
+      padding:18px 24px;
+      margin-bottom:22px;
+      box-shadow:var(--shadow-xs);
+      display:flex;gap:20px;flex-wrap:wrap;
+    }
+    .legend-entry{display:flex;align-items:flex-start;gap:9px;flex:1;min-width:160px;}
+    .legend-entry-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+    .legend-dot-flag{background:var(--red);}
+    .legend-dot-watch{background:var(--amber);}
+    .legend-dot-clear{background:var(--green);}
+    .legend-entry-text{font-size:12px;color:var(--text-mid);line-height:1.55;}
+    .legend-entry-text strong{color:var(--text-dark);}
+
+    /* ─── POLISH OVERRIDES ───────────────────────────────── */
+    .conf-pct{font:700 17px/1 'Atkinson Hyperlegible',sans-serif;min-width:40px;text-align:right;font-variant-numeric:tabular-nums;}
+    .stat-val{font-size:36px;font-weight:900;}
+    .stat-lbl{display:flex;align-items:center;gap:5px;}
+    .d-card{box-shadow:0 2px 10px rgba(0,0,0,.07);}
+    .next-section{box-shadow:0 2px 10px rgba(0,0,0,.07);}
+
+    /* ══════════════════════════════════════════════════════════
+       PATIENT HISTORY
+    ══════════════════════════════════════════════════════════ */
+    .hist-inner{max-width:1200px;margin:0 auto;padding:44px 48px;}
+    .hist-title{font-size:26px;font-weight:800;margin-bottom:4px;font-family:'Atkinson Hyperlegible',sans-serif;}
+    .hist-sub{font-size:14px;color:var(--grey-text);margin-bottom:36px;}
+    .search-wrap{position:relative;flex:1;max-width:260px;}
+    .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--grey-text);pointer-events:none;}
+    .search-input{width:100%;padding:9px 14px 9px 34px;border:1.5px solid var(--grey-border);border-radius:var(--r-pill);font:400 13px/1 'Inter',sans-serif;color:var(--text-dark);background:var(--white);outline:none;transition:border-color .2s,box-shadow .2s;}
+    .search-input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(13,92,99,.09);}
+    .search-input::placeholder{color:#9CA3AF;}
+    .hist-scroll{max-height:540px;overflow-y:auto;}
+    .hist-main-row{cursor:pointer;}
+    .hist-main-row td{transition:background .2s ease,transform .2s ease;}
+    .hist-main-row:hover td{background:var(--grey-bg);transform:translateX(3px);}
+    .hist-expand-row td{padding:0!important;border:none!important;}
+    .hist-expand-wrap{overflow:hidden;max-height:0;transition:max-height .38s cubic-bezier(.4,0,.2,1);}
+    .hist-expand-wrap.open{max-height:900px;}
+    .hist-expand-content{padding:20px 24px 24px;border-top:2px solid var(--mint-soft);background:var(--grey-bg);}
+    .hist-disease-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-bottom:16px;}
+    .hist-d-card{background:var(--white);border:1px solid var(--grey-border);border-radius:var(--r-sm);padding:13px 15px;box-shadow:var(--shadow-xs);transition:box-shadow .2s;}
+    .hist-d-card:hover{box-shadow:var(--shadow-sm);}
+    .hist-d-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;}
+    .hist-d-name{font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;}
+    .hist-conf-row{display:flex;align-items:center;gap:8px;}
+    .hist-conf-track{flex:1;height:5px;background:var(--grey-light);border-radius:var(--r-pill);overflow:hidden;}
+    .hist-conf-fill{height:100%;border-radius:var(--r-pill);}
+    .hist-conf-pct{font:700 13px/1 'Atkinson Hyperlegible',sans-serif;min-width:30px;text-align:right;font-variant-numeric:tabular-nums;}
+    .ftags{display:flex;flex-wrap:wrap;gap:4px;}
+    .ftag{font:600 10px/1 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;padding:3px 8px;border-radius:var(--r-pill);}
+    .ftag-flag{background:var(--red-bg);color:var(--red);}
+    .ftag-watch{background:var(--amber-bg);color:var(--amber);}
+    .ftag-none{font-size:12px;color:var(--grey-text);}
+    .hist-expand-actions{display:flex;align-items:center;gap:10px;margin-top:4px;}
+    .hist-empty{text-align:center;padding:64px 24px;color:var(--grey-text);}
+    .hist-empty-icon{width:40px;height:40px;margin:0 auto 14px;display:block;opacity:.3;}
+    .expand-btn{background:none;border:none;cursor:pointer;color:var(--grey-text);padding:4px 6px;border-radius:6px;transition:all .2s;display:inline-flex;align-items:center;}
+    .expand-btn:hover{background:var(--grey-light);color:var(--teal);}
+    .expand-chevron{transition:transform .3s;width:15px;height:15px;}
+    .expand-btn.open .expand-chevron{transform:rotate(180deg);}
+
+    /* ══════════════════════════════════════════════════════════
+       GLOBAL ANIMATIONS & POLISH
+    ══════════════════════════════════════════════════════════ */
+    @keyframes viewEnter{from{opacity:0;transform:translateY(14px) scale(.98);}to{opacity:1;transform:none;}}
+    .view-anim .stat-bar .stat-card:nth-child(1){animation:fadeUp .35s cubic-bezier(.4,0,.2,1) .02s both;}
+    .view-anim .stat-bar .stat-card:nth-child(2){animation:fadeUp .35s cubic-bezier(.4,0,.2,1) .08s both;}
+    .view-anim .stat-bar .stat-card:nth-child(3){animation:fadeUp .35s cubic-bezier(.4,0,.2,1) .14s both;}
+    .view-anim .dev-summary .stat-card:nth-child(1){animation:fadeUp .35s cubic-bezier(.4,0,.2,1) .02s both;}
+    .view-anim .dev-summary .stat-card:nth-child(2){animation:fadeUp .35s cubic-bezier(.4,0,.2,1) .08s both;}
+    .view-anim .dev-summary .stat-card:nth-child(3){animation:fadeUp .35s cubic-bezier(.4,0,.2,1) .14s both;}
+    .view-anim .filter-bar{animation:fadeUp .35s cubic-bezier(.4,0,.2,1) .17s both;}
+    .view-anim .table-box{animation:fadeUp .35s cubic-bezier(.4,0,.2,1) .22s both;}
+    .view-anim .dev-actions{animation:fadeUp .35s cubic-bezier(.4,0,.2,1) .18s both;}
+    .view-anim .dev-grid{animation:fadeUp .35s cubic-bezier(.4,0,.2,1) .22s both;}
+    .view-anim .alert-topbar{animation:fadeUp .35s cubic-bezier(.4,0,.2,1) .14s both;}
+    .view-anim .alert-feed{animation:fadeUp .35s cubic-bezier(.4,0,.2,1) .2s both;}
+    .view-anim .results-legend{animation:fadeUp .35s cubic-bezier(.4,0,.2,1) .14s both;}
+
+    /* Card depth on hover */
+    .stat-card{transition:box-shadow .25s ease,transform .25s ease;}
+    .stat-card:hover{transform:translateY(-4px)!important;box-shadow:0 12px 40px rgba(0,0,0,.14)!important;}
+    .d-card{box-shadow:0 2px 10px rgba(0,0,0,.07);}
+    .d-card:hover{box-shadow:0 10px 36px rgba(0,0,0,.13)!important;transform:translateY(-4px)!important;}
+    .dev-card:hover{box-shadow:0 10px 36px rgba(0,0,0,.13)!important;transform:translateY(-4px)!important;}
+    .alert-item:not(.ack):hover{box-shadow:0 6px 22px rgba(0,0,0,.11);}
+
+    /* Table row hover slide (dashboard/history tables) */
+    .dtable tbody td{transition:background .2s ease,transform .2s ease;}
+    .dtable tbody tr:not(.hist-main-row):not(.hist-expand-row):hover td{background:var(--grey-bg);transform:translateX(3px);}
+
+    /* Nav highlighter pill */
+    .nav-switcher{position:relative;}
+    #nav-hl{position:absolute;top:4px;bottom:4px;background:var(--white);border-radius:var(--r-pill);box-shadow:var(--shadow-sm);transition:left .22s cubic-bezier(.4,0,.2,1),width .22s cubic-bezier(.4,0,.2,1);pointer-events:none;z-index:0;}
+    .nav-btn{position:relative;z-index:1;}
+    .nav-btn.active{background:transparent!important;color:var(--teal)!important;box-shadow:none!important;}
+
+    /* Alert left-bar pulse */
+    @keyframes barPulse{0%,100%{opacity:1;}50%{opacity:.2;}}
+    .alert-item.new-pulse .alert-bar{animation:barPulse 2.2s ease-in-out infinite;}
+
+    /* Global scrollbar */
+    ::-webkit-scrollbar{width:4px;height:4px;}
+    ::-webkit-scrollbar-track{background:transparent;}
+    ::-webkit-scrollbar-thumb{background:rgba(13,92,99,.3);border-radius:99px;}
+
+    @media(max-width:900px){.hist-inner{padding:28px 16px;}.hist-disease-grid{grid-template-columns:1fr;}}
+  </style>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+
+<!-- ═══ NAV ═══════════════════════════════════════════════ -->
+<nav>
+  <div class="nav-logo">respra</div>
+  <div class="nav-switcher">
+    <div id="nav-hl"></div>
+    <button class="nav-btn active" id="nb-clinical" onclick="switchView('clinical',this)"><i data-lucide="activity" class="nav-icon"></i>Clinical View</button>
+    <button class="nav-btn" id="nb-history" onclick="switchView('history',this)"><i data-lucide="clipboard-list" class="nav-icon"></i>Patient History</button>
+    <button class="nav-btn" id="nb-devices" onclick="switchView('devices',this)"><i data-lucide="monitor" class="nav-icon"></i>Device Management</button>
+    <button class="nav-btn" id="nb-alerts" onclick="switchView('alerts',this)"><i data-lucide="bell" class="nav-icon"></i>Alert Feed <span class="alert-badge" id="alert-badge">3</span></button>
+  </div>
+</nav>
+
+<main>
+
+<!-- ═══ CLINICAL VIEW ═══════════════════════════════════════ -->
+<div id="view-clinical" class="view active">
+
+  <!-- Steps 1 & 2 share a centered container -->
+  <div id="clinical-centered">
+
+    <!-- STEP 1 : SETUP -->
+    <div id="step-setup" class="step active anim-up">
+      <div class="card">
+        <div class="badge-pill">New Test Session</div>
+        <h1 class="card-title">Patient Setup</h1>
+        <p class="card-sub">Configure the session before beginning VOC breath analysis. Ensure all safety checks are completed.</p>
+
+        <label class="field-label" for="pid">Patient ID</label>
+        <input class="field-input" id="pid" type="text" placeholder="e.g. PT-2026-00841" autocomplete="off"/>
+
+        <div class="field-label" style="margin-bottom:9px;">Safety Confirmation</div>
+        <label class="check-wrap" for="mpc">
+          <input type="checkbox" id="mpc"/>
+          <span class="check-text">
+            <strong>Single-use mouthpiece confirmed</strong><br>
+            Verify the mouthpiece is sealed, sterile, and correctly attached before proceeding.
+          </span>
+        </label>
+
+        <button class="btn-primary" id="begin-btn" disabled onclick="beginTest()">
+          <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" stroke="white" stroke-width="1.5"/><path d="M6.5 5.5l4 2.5-4 2.5V5.5z" fill="white"/></svg>
+          Begin Test
+        </button>
+      </div>
+    </div><!-- /step-setup -->
+
+    <!-- STEP 2 : ANALYSIS -->
+    <div id="step-analysis" class="step">
+      <div class="analysis-card anim-up">
+        <div class="analysis-title">Capturing Breath Sample</div>
+        <div class="analysis-sub">Patient breathing normally. Do not remove mouthpiece during capture.</div>
+
+        <!-- Ring timer -->
+        <div class="ring-wrap">
+          <svg class="ring-svg" width="200" height="200" viewBox="0 0 200 200">
+            <circle class="ring-bg" cx="100" cy="100" r="88"/>
+            <circle class="ring-fill" id="ring-fill" cx="100" cy="100" r="88"/>
+          </svg>
+          <div class="ring-center">
+            <div class="ring-time" id="ring-time">3:00</div>
+            <div class="ring-lbl">remaining</div>
+          </div>
+        </div>
+
+        <!-- Waveform -->
+        <div class="wave-wrap">
+          <canvas id="waveform" height="72"></canvas>
+        </div>
+
+        <div class="capture-line">
+          <div class="cap-dot"></div>
+          <span id="cap-text">Detecting volatile organic compounds…</span>
+        </div>
+
+        <button class="demo-skip" onclick="skipToResults()">(Skip — demo mode)</button>
+      </div>
+    </div><!-- /step-analysis -->
+
+  </div><!-- /clinical-centered -->
+
+  <!-- STEP 3 : RESULTS (full-width) -->
+  <div id="step-results">
+    <div class="results-mint-bg" id="results-bg"></div>
+    <div class="results-inner">
+
+      <div class="results-topbar anim-up">
+        <div>
+          <h1 class="results-title">Diagnostic Results</h1>
+          <p class="results-meta">
+            Patient ID: <b id="r-pid">—</b>&nbsp;·&nbsp;
+            Completed: <b id="r-time">—</b>
+          </p>
+        </div>
+        <button class="btn-ghost" onclick="resetClinical()">New Test</button>
+      </div>
+
+      <div class="disease-grid" id="d-grid"></div>
+
+      <div class="next-section anim-up">
+        <div class="ns-title">Recommended Next Steps</div>
+        <div class="ns-sub">Required follow-up for flagged and monitored conditions</div>
+        <div id="ns-list"></div>
+      </div>
+
+      <div class="results-legend anim-up">
+        <div class="legend-entry">
+          <div class="legend-entry-dot legend-dot-flag"></div>
+          <div class="legend-entry-text"><strong>FLAG</strong> — High confidence signal detected. Immediate clinical action required.</div>
+        </div>
+        <div class="legend-entry">
+          <div class="legend-entry-dot legend-dot-watch"></div>
+          <div class="legend-entry-text"><strong>WATCH</strong> — Moderate signal present. Further diagnostic testing recommended.</div>
+        </div>
+        <div class="legend-entry">
+          <div class="legend-entry-dot legend-dot-clear"></div>
+          <div class="legend-entry-text"><strong>CLEAR</strong> — No significant biomarkers detected. Routine monitoring advised.</div>
+        </div>
+      </div>
+
+      <div class="actions-row">
+        <button class="btn-teal" onclick="exportEHR()">
+          <svg width="15" height="15" fill="none" viewBox="0 0 15 15"><path d="M7.5 1v9M3.5 6.5l4 4 4-4M1.5 13h12" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Export to EHR
+        </button>
+        <button class="btn-ghost" onclick="showToast('Generating PDF report…')">Print Report</button>
+      </div>
+
+    </div>
+  </div><!-- /step-results -->
+
+</div><!-- /view-clinical -->
+
+<!-- ═══ PATIENT HISTORY ══════════════════════════════════════ -->
+<div id="view-history" class="view">
+  <div class="hist-inner">
+
+    <h1 class="hist-title">Patient History</h1>
+    <p class="hist-sub">Complete log of all diagnostic tests run on this device</p>
+
+    <!-- Stats -->
+    <div class="stat-bar">
+      <div class="stat-card">
+        <div class="stat-lbl"><i data-lucide="clipboard-check" class="stat-icon"></i>Total Tests Run</div>
+        <div class="stat-val" id="hv-total" data-target="847">847</div>
+        <div class="stat-chg">All time on this device</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl"><i data-lucide="alert-circle" class="stat-icon"></i>Flagged Results</div>
+        <div class="stat-val" id="hv-flagged" data-target="124" style="color:var(--red)">124</div>
+        <div class="stat-chg chg-up">14.6% flag rate</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl"><i data-lucide="activity" class="stat-icon"></i>Average Daily Tests</div>
+        <div class="stat-val" id="hv-daily" data-target="23">23</div>
+        <div class="stat-chg">Tests per day</div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <i data-lucide="search" class="search-icon"></i>
+        <input class="search-input" id="hist-search" type="text" placeholder="Search patient ID…" oninput="applyHistoryFilters()" autocomplete="off"/>
+      </div>
+      <select class="f-select" id="hist-status" onchange="applyHistoryFilters()">
+        <option value="all">All Statuses</option>
+        <option value="FLAG">FLAG</option>
+        <option value="WATCH">WATCH</option>
+        <option value="CLEAR">CLEAR</option>
+      </select>
+      <select class="f-select" id="hist-disease" onchange="applyHistoryFilters()">
+        <option value="all">All Diseases</option>
+        <option>Tuberculosis</option>
+        <option>Kidney Disease</option>
+        <option>Diabetes</option>
+        <option>Lung Cancer</option>
+        <option>COPD</option>
+        <option>Liver Disease</option>
+        <option>Respiratory Infection</option>
+      </select>
+      <div class="f-pills">
+        <button class="f-pill active" onclick="setHistPeriod(this,'7d')">Last 7 days</button>
+        <button class="f-pill" onclick="setHistPeriod(this,'30d')">Last 30 days</button>
+        <button class="f-pill" onclick="setHistPeriod(this,'90d')">Last 90 days</button>
+      </div>
+    </div>
+
+    <!-- Test log table -->
+    <div class="table-box" id="hist-table-box">
+      <div class="table-head-row">
+        <span class="table-title">Test Log</span>
+        <span class="table-count" id="hist-count">Showing 14 tests</span>
+      </div>
+      <div class="table-scroll hist-scroll">
+        <table class="dtable">
+          <thead>
+            <tr>
+              <th>Patient ID</th>
+              <th>Date &amp; Time</th>
+              <th>Diseases Noted</th>
+              <th>Highest Status</th>
+              <th style="width:52px"></th>
+            </tr>
+          </thead>
+          <tbody id="hist-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div class="hist-empty" id="hist-empty" style="display:none">
+      <i data-lucide="search-x" class="hist-empty-icon"></i>
+      <p>No tests match your filters.</p>
+    </div>
+
+  </div>
+</div><!-- /view-history -->
+
+<!-- ═══ DEVICE MANAGEMENT ════════════════════════════════ -->
+<div id="view-devices" class="view">
+  <div class="dev-inner">
+
+    <h1 class="dev-title">Device Management</h1>
+    <p class="dev-sub">Monitor and manage all deployed Respra diagnostic units across your network</p>
+
+    <!-- Summary stats -->
+    <div class="dev-summary">
+      <div class="stat-card">
+        <div class="stat-lbl"><i data-lucide="monitor" class="stat-icon"></i>Total Devices</div>
+        <div class="stat-val" id="dv-total">12</div>
+        <div class="stat-chg">Across 4 departments</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl"><i data-lucide="check-circle" class="stat-icon"></i>Ready to Test</div>
+        <div class="stat-val" id="dv-online" style="color:var(--green)">9</div>
+        <div class="stat-chg chg-dn">75% fleet uptime</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl"><i data-lucide="alert-circle" class="stat-icon"></i>Needs Attention</div>
+        <div class="stat-val" id="dv-cal" style="color:var(--red)">2</div>
+        <div class="stat-chg chg-up">Calibration overdue</div>
+      </div>
+    </div>
+
+    <!-- Add Device button -->
+    <div class="dev-actions">
+      <button class="btn-teal" onclick="openAddDevice()">
+        <svg width="14" height="14" fill="none" viewBox="0 0 14 14"><path d="M7 1v12M1 7h12" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+        Add Device
+      </button>
+    </div>
+
+    <!-- Device grid -->
+    <div class="dev-grid" id="dev-grid"></div>
+
+  </div>
+</div><!-- /view-devices -->
+
+<!-- ═══ ALERT FEED ═══════════════════════════════════════ -->
+<div id="view-alerts" class="view">
+  <div class="alert-inner">
+
+    <h1 class="alert-title">Clinician Alert Feed</h1>
+    <p class="alert-sub">Real-time FLAG and WATCH results requiring clinical review</p>
+
+    <div class="alert-topbar">
+      <div class="alert-filters">
+        <span class="filter-lbl">Filter:</span>
+        <div class="f-pills">
+          <button class="f-pill active" onclick="setAlertFilter(this,'all')">All</button>
+          <button class="f-pill" onclick="setAlertFilter(this,'flag')">FLAG</button>
+          <button class="f-pill" onclick="setAlertFilter(this,'watch')">WATCH</button>
+          <button class="f-pill" onclick="setAlertFilter(this,'unread')">Unread</button>
+        </div>
+      </div>
+      <button class="btn-ghost" onclick="markAllReviewed()">Mark All Reviewed</button>
+    </div>
+
+    <div class="alert-feed" id="alert-feed"></div>
+
+  </div>
+</div><!-- /view-alerts -->
+
+</main>
+
+<!-- Add Device Modal -->
+<div class="modal-overlay" id="add-device-modal" onclick="modalOverlayClick(event)">
+  <div class="modal-box">
+    <div class="modal-title">Add New Device</div>
+    <p class="modal-sub">Register a new Respra unit to the fleet</p>
+    <label class="field-label" for="m-devid">Device ID</label>
+    <input class="field-input" id="m-devid" type="text" placeholder="e.g. RSP-0013" autocomplete="off"/>
+    <label class="field-label" for="m-dept">Department</label>
+    <input class="field-input" id="m-dept" type="text" placeholder="e.g. Pulmonology" autocomplete="off"/>
+    <label class="field-label" for="m-loc">Location</label>
+    <input class="field-input" id="m-loc" type="text" placeholder="e.g. Ward 3B, Floor 2" autocomplete="off"/>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn-teal" onclick="saveDevice()">Add Device</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <div class="toast-ico">
+    <svg width="14" height="14" fill="none" viewBox="0 0 14 14"><path d="M2 7l3.5 3.5L12 4" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+  <span id="toast-msg">Done.</span>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════
+   NAV / VIEW SWITCHING
+══════════════════════════════════════════════════ */
+function switchView(id, btn){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active','view-anim'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const view=document.getElementById('view-'+id);
+  view.classList.add('active');
+  btn.classList.add('active');
+  void view.offsetWidth;
+  view.classList.add('view-anim');
+  window.scrollTo({top:0,behavior:'smooth'});
+  updateNavHighlight(btn);
+  initViewCounters(id);
+  if(window.lucide) lucide.createIcons();
+}
+
+function updateNavHighlight(btn){
+  const hl=document.getElementById('nav-hl');
+  if(!hl||!btn) return;
+  const sw=document.querySelector('.nav-switcher');
+  const sr=sw.getBoundingClientRect();
+  const br=btn.getBoundingClientRect();
+  hl.style.left=(br.left-sr.left)+'px';
+  hl.style.width=br.width+'px';
+}
+
+/* ══════════════════════════════════════════════════
+   COUNT-UP ANIMATION
+══════════════════════════════════════════════════ */
+function countUp(el, target, duration=800){
+  const clean=String(target).replace(/,/g,'');
+  const num=parseFloat(clean);
+  if(isNaN(num)){el.textContent=target;return;}
+  const useComma=String(target).includes(',');
+  const fmt=n=>useComma?Math.round(n).toLocaleString():String(Math.round(n));
+  const t0=performance.now();
+  function tick(now){
+    const t=Math.min((now-t0)/duration,1);
+    const ease=1-Math.pow(1-t,3);
+    el.textContent=fmt(num*ease);
+    if(t<1) requestAnimationFrame(tick);
+    else el.textContent=target;
+  }
+  requestAnimationFrame(tick);
+}
+
+function initViewCounters(viewId){
+  const view=document.getElementById('view-'+viewId);
+  if(!view) return;
+  view.querySelectorAll('.stat-val').forEach(el=>{
+    const target=el.dataset.target||el.textContent.trim();
+    if(!el.dataset.target) el.dataset.target=target;
+    countUp(el,target);
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   STEP MANAGEMENT
+══════════════════════════════════════════════════ */
+function showCentered(stepId){
+  document.getElementById('clinical-centered').style.display='flex';
+  document.getElementById('step-results').style.display='none';
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+  const el=document.getElementById(stepId);
+  el.classList.add('active');
+  el.style.animation='none';
+  requestAnimationFrame(()=>{
+    el.style.animation='';
+    el.classList.add('anim-up');
+  });
+}
+function showResults(){
+  document.getElementById('clinical-centered').style.display='none';
+  const r=document.getElementById('step-results');
+  r.style.display='block';
+  r.style.animation='fadeIn .5s ease both';
+}
+
+/* ══════════════════════════════════════════════════
+   SETUP FORM
+══════════════════════════════════════════════════ */
+const pidEl  = document.getElementById('pid');
+const mpcEl  = document.getElementById('mpc');
+const btnEl  = document.getElementById('begin-btn');
+
+function validateForm(){
+  btnEl.disabled = !(pidEl.value.trim().length>0 && mpcEl.checked);
+}
+pidEl.addEventListener('input', validateForm);
+mpcEl.addEventListener('change', validateForm);
+
+/* ══════════════════════════════════════════════════
+   TIMER & ANALYSIS
+══════════════════════════════════════════════════ */
+let timerHandle=null, waveHandle=null, wavePhase=0;
+let waveCtx, waveCvs;
+
+const DEMO_SECS = 10; // real-time duration of demo
+const DISPLAY_SECS = 180; // what timer shows
+
+const statusMsgs = [
+  'Detecting volatile organic compounds…',
+  'Isolating breath biomarker signatures…',
+  'Cross-referencing molecular patterns…',
+  'Running multi-disease correlation analysis…',
+  'Finalising diagnostic confidence scores…',
+];
+
+function beginTest(){
+  const pid = pidEl.value.trim();
+  document.getElementById('r-pid').textContent = pid;
+
+  showCentered('step-analysis');
+
+  // Reset ring
+  const ring = document.getElementById('ring-fill');
+  const circ = 2*Math.PI*88;
+  ring.style.transition='none';
+  ring.style.strokeDashoffset=circ;
+
+  startWave();
+
+  let elapsed=0;
+  const capText = document.getElementById('cap-text');
+  const ringTime = document.getElementById('ring-time');
+
+  // re-enable transition
+  requestAnimationFrame(()=>{ ring.style.transition='stroke-dashoffset .9s linear'; });
+
+  timerHandle = setInterval(()=>{
+    elapsed++;
+    const pct = elapsed/DEMO_SECS;
+    const dispLeft = Math.max(0, Math.round(DISPLAY_SECS*(1-pct)));
+    const m=Math.floor(dispLeft/60), s=dispLeft%60;
+    ringTime.textContent = m+':'+(s<10?'0':'')+s;
+    ring.style.strokeDashoffset = circ*(1-pct);
+
+    const mi = Math.min(Math.floor(pct*statusMsgs.length), statusMsgs.length-1);
+    capText.textContent = statusMsgs[mi];
+
+    if(elapsed>=DEMO_SECS){
+      clearInterval(timerHandle);
+      stopWave();
+      buildResults();
+    }
+  },1000);
+}
+
+function skipToResults(){
+  if(timerHandle) clearInterval(timerHandle);
+  stopWave();
+  buildResults();
+}
+
+/* ══════════════════════════════════════════════════
+   WAVEFORM
+══════════════════════════════════════════════════ */
+function startWave(){
+  waveCvs = document.getElementById('waveform');
+  waveCtx = waveCvs.getContext('2d');
+  // hi-dpi
+  const dpr = window.devicePixelRatio||1;
+  const w = waveCvs.offsetWidth;
+  const h = 72;
+  waveCvs.width  = w*dpr;
+  waveCvs.height = h*dpr;
+  waveCtx.scale(dpr,dpr);
+  wavePhase=0;
+  drawWave();
+}
+
+function drawWave(){
+  if(!waveCtx) return;
+  const w=waveCvs.offsetWidth, h=72;
+  waveCtx.clearRect(0,0,w,h);
+
+  const layers=[
+    {amp:16, freq:.028, ph:wavePhase,      col:'rgba(13,92,99,.75)',   lw:2},
+    {amp:11, freq:.045, ph:wavePhase*1.3,  col:'rgba(61,191,184,.5)',  lw:1.5},
+    {amp:6,  freq:.07,  ph:wavePhase*.65,  col:'rgba(13,92,99,.2)',    lw:1},
+  ];
+
+  const breath = 1 + .28*Math.sin(wavePhase*.07);
+
+  layers.forEach(l=>{
+    waveCtx.beginPath();
+    waveCtx.strokeStyle=l.col;
+    waveCtx.lineWidth=l.lw;
+    waveCtx.lineJoin='round';
+    for(let x=0;x<=w;x++){
+      const y = h/2 + l.amp*breath*Math.sin(x*l.freq + l.ph);
+      x===0 ? waveCtx.moveTo(x,y) : waveCtx.lineTo(x,y);
+    }
+    waveCtx.stroke();
+  });
+  wavePhase+=.07;
+  waveHandle = requestAnimationFrame(drawWave);
+}
+
+function stopWave(){
+  if(waveHandle){ cancelAnimationFrame(waveHandle); waveHandle=null; }
+  if(waveCtx && waveCvs) waveCtx.clearRect(0,0,waveCvs.width,waveCvs.height);
+}
+
+/* ══════════════════════════════════════════════════
+   RESULTS DATA & RENDERING
+══════════════════════════════════════════════════ */
+const diseaseIcons={
+  'Tuberculosis':'wind',
+  'Kidney Disease':'droplets',
+  'Diabetes':'zap',
+  'Lung Cancer':'alert-triangle',
+  'COPD':'wind',
+  'Liver Disease':'activity',
+  'Respiratory Infection':'thermometer',
+};
+
+const diseases=[
+  {name:'Tuberculosis',         pct:9,  status:'CLEAR', icon:'wind',           desc:'No significant TB biomarkers detected. Routine monitoring advised.'},
+  {name:'Kidney Disease',       pct:38, status:'WATCH', icon:'droplets',       desc:'Moderate renal stress markers present. Blood panel and urinalysis recommended within 2 weeks.'},
+  {name:'Diabetes',             pct:6,  status:'CLEAR', icon:'zap',            desc:'No notable metabolic markers detected. No action required.'},
+  {name:'Lung Cancer',          pct:4,  status:'CLEAR', icon:'alert-triangle', desc:'No oncological VOC patterns detected. No action required.'},
+  {name:'COPD',                 pct:64, status:'FLAG',  icon:'wind',           desc:'Significant airflow obstruction markers detected. Spirometry and specialist referral recommended.'},
+  {name:'Liver Disease',        pct:11, status:'CLEAR', icon:'activity',       desc:'Liver function markers within normal range. No action required.'},
+  {name:'Respiratory Infection',pct:7,  status:'CLEAR', icon:'thermometer',    desc:'No active respiratory infection markers detected. No action required.'},
+];
+
+const recommendations={
+  'Tuberculosis':         'Immediate sputum culture, chest X-ray, and infectious disease referral. Initiate contact tracing within 24 hours.',
+  'Kidney Disease':       'eGFR blood panel and urinalysis within 2 weeks. Review ACE inhibitor eligibility and blood pressure management.',
+  'COPD':                 'Spirometry (FEV1/FVC) test recommended. Review occupational exposures and smoking cessation support.',
+};
+
+function buildResults(){
+  // Timestamp
+  const now = new Date();
+  document.getElementById('r-time').textContent =
+    now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) +
+    ' · ' +
+    now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+
+  // Disease cards
+  const grid = document.getElementById('d-grid');
+  grid.innerHTML='';
+  diseases.forEach((d,i)=>{
+    const fillCls = d.status==='FLAG'?'cf-flag':d.status==='WATCH'?'cf-watch':'cf-clear';
+    const badgeCls= d.status==='FLAG'?'b-flag' :d.status==='WATCH'?'b-watch' :'b-clear';
+    const card=document.createElement('div');
+    card.className='d-card';
+    card.style.animationDelay=(i*0.07)+'s';
+    card.innerHTML=`
+      <div class="d-card-head">
+        <span class="d-name"><i data-lucide="${d.icon}" class="dis-icon ${d.status.toLowerCase()}"></i>${d.name}</span>
+        <span class="badge ${badgeCls}">${d.status}</span>
+      </div>
+      <div class="conf-row">
+        <div class="conf-track">
+          <div class="conf-fill ${fillCls}" data-pct="${d.pct}" style="width:0"></div>
+        </div>
+        <span class="conf-pct">${d.pct}%</span>
+      </div>
+      <p class="d-desc">${d.desc}</p>`;
+    grid.appendChild(card);
+  });
+
+  // Next steps
+  const ns=document.getElementById('ns-list');
+  ns.innerHTML='';
+  diseases.filter(d=>d.status!=='CLEAR').forEach(d=>{
+    const isCls=d.status==='FLAG'?'ni-flag':'ni-watch';
+    const icon=d.status==='FLAG'?'⚠️':'👁';
+    const action=recommendations[d.name]||'Schedule follow-up consultation within 2 weeks.';
+    const div=document.createElement('div');
+    div.className='ns-item';
+    div.innerHTML=`
+      <div class="ns-icon ${isCls}">${icon}</div>
+      <div class="ns-body">
+        <div class="ns-disease">
+          ${d.name}
+          <span class="badge ${d.status==='FLAG'?'b-flag':'b-watch'}" style="font-size:9px;padding:3px 8px;">${d.status}</span>
+        </div>
+        <div class="ns-action">${action}</div>
+      </div>`;
+    ns.appendChild(div);
+  });
+
+  showResults();
+  if(window.lucide) lucide.createIcons();
+
+  // Animate bars after DOM settles
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    document.querySelectorAll('.conf-fill').forEach(b=>{
+      b.style.transition='width 1.2s cubic-bezier(.4,0,.2,1)';
+      b.style.width=b.dataset.pct+'%';
+    });
+  }));
+}
+
+function resetClinical(){
+  if(timerHandle) clearInterval(timerHandle);
+  stopWave();
+  pidEl.value=''; mpcEl.checked=false; btnEl.disabled=true;
+  showCentered('step-setup');
+}
+
+function exportEHR(){
+  showToast('Results pushed to patient record.');
+}
+
+/* ══════════════════════════════════════════════════
+   PATIENT HISTORY DATA
+══════════════════════════════════════════════════ */
+const B=(n,s,i)=>({name:n,status:s,pct:0,icon:i}); // placeholder — overridden per record
+function mkBreak(tb,kb,db,lb,cb,ab,rb){
+  return [
+    {name:'Tuberculosis',         status:tb[0],pct:tb[1],icon:'wind'},
+    {name:'Kidney Disease',       status:kb[0],pct:kb[1],icon:'droplets'},
+    {name:'Diabetes',             status:db[0],pct:db[1],icon:'zap'},
+    {name:'Lung Cancer',          status:lb[0],pct:lb[1],icon:'alert-triangle'},
+    {name:'COPD',                 status:cb[0],pct:cb[1],icon:'wind'},
+    {name:'Liver Disease',        status:ab[0],pct:ab[1],icon:'activity'},
+    {name:'Respiratory Infection',status:rb[0],pct:rb[1],icon:'thermometer'},
+  ];
+}
+const C=(p)=>['CLEAR',p], W=(p)=>['WATCH',p], F=(p)=>['FLAG',p];
+
+const historyData=[
+  {rid:0,  id:'PT-00845',datetime:'May 9 · 10:35',daysAgo:0, highest:'FLAG',  breakdown:mkBreak(C(9), W(38),C(5), F(91),C(11),C(6), C(4))},
+  {rid:1,  id:'PT-00843',datetime:'May 9 · 10:02',daysAgo:0, highest:'FLAG',  breakdown:mkBreak(F(88),C(14),C(7), C(3), C(8), C(5), C(19))},
+  {rid:2,  id:'PT-00841',datetime:'May 9 · 09:14',daysAgo:0, highest:'FLAG',  breakdown:mkBreak(F(87),C(12),C(6), C(4), F(64),C(9), C(7))},
+  {rid:3,  id:'PT-00840',datetime:'May 9 · 09:10',daysAgo:0, highest:'WATCH', breakdown:mkBreak(C(7), W(43),C(8), C(5), C(12),C(6), C(9))},
+  {rid:4,  id:'PT-00839',datetime:'May 9 · 08:52',daysAgo:0, highest:'WATCH', breakdown:mkBreak(C(6), C(14),C(9), C(5), W(61),C(8), C(11))},
+  {rid:5,  id:'PT-00836',datetime:'May 8 · 08:30',daysAgo:1, highest:'FLAG',  breakdown:mkBreak(C(11),C(18),C(7), C(4), C(22),C(9), F(78))},
+  {rid:6,  id:'PT-00838',datetime:'May 8 · 07:15',daysAgo:1, highest:'WATCH', breakdown:mkBreak(C(6), C(15),C(8), C(3), C(19),W(38),C(7))},
+  {rid:7,  id:'PT-00834',datetime:'May 8 · 14:22',daysAgo:1, highest:'CLEAR', breakdown:mkBreak(C(8), C(11),C(6), C(4), C(14),C(7), C(5))},
+  {rid:8,  id:'PT-00832',datetime:'May 7 · 11:08',daysAgo:2, highest:'FLAG',  breakdown:mkBreak(C(12),C(17),C(9), C(6), F(72),C(11),C(8))},
+  {rid:9,  id:'PT-00830',datetime:'May 7 · 09:30',daysAgo:2, highest:'CLEAR', breakdown:mkBreak(C(7), C(9), C(11),C(3), C(16),C(5), C(6))},
+  {rid:10, id:'PT-00828',datetime:'May 6 · 15:45',daysAgo:3, highest:'WATCH', breakdown:mkBreak(C(9), C(22),W(42),C(5), C(18),C(8), C(6))},
+  {rid:11, id:'PT-00825',datetime:'May 6 · 13:20',daysAgo:3, highest:'CLEAR', breakdown:mkBreak(C(5), C(13),C(8), C(4), C(11),C(6), C(7))},
+  {rid:12, id:'PT-00822',datetime:'May 5 · 10:15',daysAgo:4, highest:'FLAG',  breakdown:mkBreak(F(84),C(16),C(7), C(4), C(29),C(8), C(12))},
+  {rid:13, id:'PT-00820',datetime:'May 4 · 14:00',daysAgo:5, highest:'WATCH', breakdown:mkBreak(C(7), C(19),C(11),C(5), C(23),W(35),C(9))},
+];
+
+let histPeriodDays=7, expandedHistRow=null;
+
+function renderHistoryTable(data){
+  const tbody=document.getElementById('hist-body');
+  const empty=document.getElementById('hist-empty');
+  const box=document.getElementById('hist-table-box');
+  tbody.innerHTML='';
+  if(!data.length){
+    box.style.display='none';
+    empty.style.display='block';
+    document.getElementById('hist-count').textContent='No results';
+    if(window.lucide) lucide.createIcons();
+    return;
+  }
+  box.style.display='';
+  empty.style.display='none';
+  document.getElementById('hist-count').textContent=`Showing ${data.length} test${data.length!==1?'s':''}`;
+
+  data.forEach(r=>{
+    const noted=r.breakdown.filter(d=>d.status!=='CLEAR');
+    const tagHtml=noted.length
+      ?noted.map(d=>`<span class="ftag ${d.status==='FLAG'?'ftag-flag':'ftag-watch'}">${d.name.length>14?d.name.slice(0,12)+'…':d.name}</span>`).join('')
+      :`<span class="ftag-none">All clear</span>`;
+    const stCls=r.highest==='FLAG'?'b-flag':r.highest==='WATCH'?'b-watch':'b-clear';
+    const isExp=expandedHistRow===r.rid;
+
+    // Main row
+    const tr=document.createElement('tr');
+    tr.className='hist-main-row';
+    tr.onclick=()=>toggleHistRow(r.rid);
+    tr.innerHTML=`
+      <td style="font-weight:600;color:var(--text-dark)">${r.id}</td>
+      <td>${r.datetime}</td>
+      <td><div class="ftags">${tagHtml}</div></td>
+      <td><span class="badge ${stCls}">${r.highest}</span></td>
+      <td>
+        <button class="expand-btn${isExp?' open':''}" data-rid="${r.rid}" onclick="event.stopPropagation();toggleHistRow(${r.rid})">
+          <svg class="expand-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+      </td>`;
+    tbody.appendChild(tr);
+
+    // Expand row
+    const disCards=r.breakdown.map(d=>{
+      const fc=d.status==='FLAG'?'cf-flag':d.status==='WATCH'?'cf-watch':'cf-clear';
+      const bc=d.status==='FLAG'?'b-flag':d.status==='WATCH'?'b-watch':'b-clear';
+      return `<div class="hist-d-card">
+        <div class="hist-d-head">
+          <span class="hist-d-name"><i data-lucide="${d.icon}" style="width:13px;height:13px;flex-shrink:0"></i>${d.name}</span>
+          <span class="badge ${bc}" style="font-size:9px;padding:3px 7px">${d.status}</span>
+        </div>
+        <div class="hist-conf-row">
+          <div class="hist-conf-track"><div class="hist-conf-fill ${fc}" style="width:${d.pct}%"></div></div>
+          <span class="hist-conf-pct">${d.pct}%</span>
+        </div>
+      </div>`;
+    }).join('');
+
+    const expTr=document.createElement('tr');
+    expTr.className='hist-expand-row';
+    expTr.innerHTML=`<td colspan="5" style="padding:0;border-bottom:1px solid var(--grey-border)">
+      <div class="hist-expand-wrap${isExp?' open':''}" id="hist-exp-${r.rid}">
+        <div class="hist-expand-content">
+          <div class="hist-disease-grid">${disCards}</div>
+          <div class="hist-expand-actions">
+            <button class="btn-teal" style="font-size:13px;padding:10px 20px" onclick="exportEHR()">
+              <svg width="13" height="13" fill="none" viewBox="0 0 15 15"><path d="M7.5 1v9M3.5 6.5l4 4 4-4M1.5 13h12" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Export to EHR
+            </button>
+            <button class="btn-ghost" style="font-size:13px;padding:10px 18px" onclick="showToast('Generating PDF report…')">Print Report</button>
+          </div>
+        </div>
+      </div>
+    </td>`;
+    tbody.appendChild(expTr);
+  });
+  if(window.lucide) lucide.createIcons();
+}
+
+function toggleHistRow(rid){
+  const prev=expandedHistRow;
+  if(prev!==null){
+    const w=document.getElementById('hist-exp-'+prev);
+    if(w) w.classList.remove('open');
+    document.querySelectorAll(`[data-rid="${prev}"]`).forEach(b=>b.classList.remove('open'));
+  }
+  expandedHistRow=(prev===rid)?null:rid;
+  if(expandedHistRow!==null){
+    const w=document.getElementById('hist-exp-'+expandedHistRow);
+    if(w) w.classList.add('open');
+    document.querySelectorAll(`[data-rid="${expandedHistRow}"]`).forEach(b=>b.classList.add('open'));
+    if(window.lucide) lucide.createIcons();
+  }
+}
+
+function applyHistoryFilters(){
+  const search=(document.getElementById('hist-search').value||'').toLowerCase().trim();
+  const status=document.getElementById('hist-status').value;
+  const disease=document.getElementById('hist-disease').value;
+  const data=historyData.filter(r=>{
+    if(r.daysAgo>histPeriodDays-1) return false;
+    if(search && !r.id.toLowerCase().includes(search)) return false;
+    if(status!=='all' && r.highest!==status) return false;
+    if(disease!=='all'){
+      const d=r.breakdown.find(b=>b.name===disease);
+      if(!d||d.status==='CLEAR') return false;
+    }
+    return true;
+  });
+  expandedHistRow=null;
+  renderHistoryTable(data);
+}
+
+function setHistPeriod(btn,key){
+  histPeriodDays=key==='7d'?7:key==='30d'?30:90;
+  document.querySelectorAll('#view-history .f-pill').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  applyHistoryFilters();
+}
+
+/* ══════════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════════ */
+let toastTimer=null;
+function showToast(msg, dur=3600){
+  const t=document.getElementById('toast');
+  document.getElementById('toast-msg').textContent=msg;
+  t.classList.add('show');
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'), dur);
+}
+
+/* ══════════════════════════════════════════════════
+   PARALLAX
+══════════════════════════════════════════════════ */
+window.addEventListener('scroll',()=>{
+  const bg=document.getElementById('results-bg');
+  if(bg) bg.style.transform=`translateY(${window.scrollY*.15}px)`;
+},{ passive:true });
+
+/* ══════════════════════════════════════════════════
+   DEVICE MANAGEMENT
+══════════════════════════════════════════════════ */
+const deviceData = [
+  {id:'RSP-0001',dept:'Pulmonology',       loc:'Ward 2A, Floor 1',    status:'online', tests:342,lastUsed:'2 hrs ago',  calStatus:'ok',      calDue:'Aug 2026'},
+  {id:'RSP-0002',dept:'Infectious Disease',loc:'Isolation Ward',       status:'online', tests:289,lastUsed:'45 min ago', calStatus:'ok',      calDue:'Sep 2026'},
+  {id:'RSP-0003',dept:'Emergency Medicine',loc:'A&E Triage',           status:'low',    tests:467,lastUsed:'1 hr ago',   calStatus:'overdue', calDue:'Apr 2026'},
+  {id:'RSP-0004',dept:'Oncology',          loc:'Floor 4, Bay C',       status:'online', tests:198,lastUsed:'3 hrs ago',  calStatus:'ok',      calDue:'Nov 2026'},
+  {id:'RSP-0005',dept:'Respiratory',       loc:'Chest Clinic',         status:'offline',tests:521,lastUsed:'2 days ago', calStatus:'ok',      calDue:'Jul 2026'},
+  {id:'RSP-0006',dept:'General Medicine',  loc:'Ward 7, Rm 12',        status:'online', tests:134,lastUsed:'5 hrs ago',  calStatus:'ok',      calDue:'Oct 2026'},
+  {id:'RSP-0007',dept:'Infectious Disease',loc:'Outpatient Clinic',    status:'online', tests:276,lastUsed:'20 min ago', calStatus:'ok',      calDue:'Dec 2026'},
+  {id:'RSP-0008',dept:'Pulmonology',       loc:'Ward 2B, Floor 1',     status:'online', tests:88, lastUsed:'6 hrs ago',  calStatus:'overdue', calDue:'Mar 2026'},
+  {id:'RSP-0009',dept:'Emergency Medicine',loc:'Resus Bay',            status:'online', tests:412,lastUsed:'10 min ago', calStatus:'ok',      calDue:'Jun 2026'},
+  {id:'RSP-0010',dept:'Oncology',          loc:'Clinic 3',             status:'offline',tests:223,lastUsed:'4 days ago', calStatus:'ok',      calDue:'Jan 2027'},
+  {id:'RSP-0011',dept:'Respiratory',       loc:'Lung Function Lab',    status:'online', tests:377,lastUsed:'1 hr ago',   calStatus:'ok',      calDue:'Aug 2026'},
+  {id:'RSP-0012',dept:'General Medicine',  loc:'Ward 9',               status:'online', tests:156,lastUsed:'3 hrs ago',  calStatus:'ok',      calDue:'Sep 2026'},
+];
+
+const deviceLogs = {
+  'RSP-0001':[{t:'09:14',pid:'PT-00841',dis:'Tuberculosis',flag:'FLAG'},{t:'08:52',pid:'PT-00839',dis:'COPD',flag:'WATCH'},{t:'07:30',pid:'PT-00837',dis:null}],
+  'RSP-0002':[{t:'10:02',pid:'PT-00843',dis:'Tuberculosis',flag:'FLAG'},{t:'09:45',pid:'PT-00842',dis:null},{t:'09:10',pid:'PT-00840',dis:'Kidney Disease',flag:'WATCH'}],
+  'RSP-0003':[{t:'08:30',pid:'PT-00836',dis:'Respiratory Infection',flag:'FLAG'},{t:'07:55',pid:'PT-00835',dis:null},{t:'07:20',pid:'PT-00833',dis:null}],
+  'RSP-0009':[{t:'10:35',pid:'PT-00845',dis:'Lung Cancer',flag:'FLAG'},{t:'10:22',pid:'PT-00844',dis:null}],
+};
+
+let expandedDevice = null;
+
+function renderDevices(){
+  const grid = document.getElementById('dev-grid');
+  if(!grid) return;
+  grid.innerHTML='';
+  deviceData.forEach((d,i)=>{
+    const dotCls   = d.status==='online'?'dot-online':d.status==='offline'?'dot-offline':'dot-low';
+    const stCls    = d.status==='online'?'status-online':d.status==='offline'?'status-offline':'status-low';
+    const stLabel  = d.status==='online'?'Ready to test':d.status==='offline'?'Unavailable':'Low battery — charge before use';
+    const calCls   = d.calStatus==='ok'?'cal-ok':'cal-overdue';
+    const calLabel = d.calStatus==='ok'?'Calibrated':'Needs attention';
+    const logs     = deviceLogs[d.id]||[];
+    const isExp    = expandedDevice===d.id;
+
+    let logHtml='';
+    if(isExp){
+      const rows = logs.length ? logs.map(l=>`
+        <div class="dev-log-item">
+          <span class="dev-log-time">${l.t}</span>
+          <span class="dev-log-pid">${l.pid}</span>
+          ${l.flag==='FLAG'?`<span class="dev-log-dis dis-flag">${l.dis}</span>`:
+            l.flag==='WATCH'?`<span class="dev-log-dis dis-watch">${l.dis}</span>`:
+            `<span class="dis-clear">Clear</span>`}
+        </div>`).join('') : '<p style="font-size:13px;color:var(--grey-text)">No recent activity recorded.</p>';
+      logHtml=`<div class="dev-log"><div class="dev-log-title">Recent Activity</div>${rows}</div>`;
+    }
+
+    const card=document.createElement('div');
+    card.className='dev-card'+(isExp?' expanded':'');
+    card.style.animationDelay=(i*0.04)+'s';
+    card.innerHTML=`
+      <div class="dev-card-top">
+        <div>
+          <div class="dev-id">${d.id}</div>
+          <div class="dev-dept">${d.dept} · ${d.loc}</div>
+        </div>
+        <div class="dev-status">
+          <span class="dev-dot ${dotCls}"></span>
+          <span class="${stCls}">${stLabel}</span>
+        </div>
+      </div>
+      <div class="dev-card-stats">
+        <div class="dev-stat">
+          <span class="dev-stat-val">${d.tests.toLocaleString()}</span>
+          <span class="dev-stat-lbl">Tests Run</span>
+        </div>
+        <div class="dev-stat">
+          <span class="dev-stat-val">${d.lastUsed}</span>
+          <span class="dev-stat-lbl">Last Used</span>
+        </div>
+        <div class="dev-stat">
+          <span class="dev-stat-val">${d.calDue}</span>
+          <span class="dev-stat-lbl">Cal. Due</span>
+        </div>
+        <span class="cal-tag ${calCls}">${calLabel}</span>
+      </div>
+      <div class="dev-expand-hint">${isExp?'▲ Collapse':'▼ View activity log'}</div>
+      ${logHtml}`;
+    card.onclick=()=>toggleDevice(d.id);
+    grid.appendChild(card);
+  });
+}
+
+function toggleDevice(id){
+  expandedDevice = expandedDevice===id ? null : id;
+  renderDevices();
+}
+
+function openAddDevice(){
+  document.getElementById('add-device-modal').classList.add('open');
+}
+function closeModal(){
+  document.getElementById('add-device-modal').classList.remove('open');
+}
+function modalOverlayClick(e){
+  if(e.target===document.getElementById('add-device-modal')) closeModal();
+}
+function saveDevice(){
+  const id   = document.getElementById('m-devid').value.trim();
+  const dept = document.getElementById('m-dept').value.trim();
+  const loc  = document.getElementById('m-loc').value.trim();
+  if(!id||!dept){ showToast('Please fill in Device ID and Department.'); return; }
+  deviceData.push({id,dept,loc:loc||'—',status:'online',tests:0,lastUsed:'Just now',calStatus:'ok',calDue:'TBD'});
+  document.getElementById('dv-total').textContent=deviceData.length;
+  closeModal();
+  renderDevices();
+  showToast(`Device ${id} added to fleet.`);
+  ['m-devid','m-dept','m-loc'].forEach(id=>{ document.getElementById(id).value=''; });
+}
+
+/* ══════════════════════════════════════════════════
+   ALERT FEED
+══════════════════════════════════════════════════ */
+const alertData = [
+  {id:'a1',pid:'PT-00845',disease:'Lung Cancer',          pct:91,type:'flag', dept:'Emergency Medicine', device:'RSP-0009',time:'10:35',ack:false,pulse:true,  action:'Refer urgently to oncology. Order CT chest and arrange biopsy referral.'},
+  {id:'a2',pid:'PT-00843',disease:'Tuberculosis',         pct:88,type:'flag', dept:'Infectious Disease',  device:'RSP-0002',time:'10:02',ack:false,pulse:true,  action:'Isolate patient immediately and order sputum culture. Initiate contact tracing.'},
+  {id:'a3',pid:'PT-00841',disease:'Tuberculosis',         pct:87,type:'flag', dept:'Pulmonology',         device:'RSP-0001',time:'09:14',ack:false,pulse:false, action:'Confirm with chest X-ray and begin infectious disease referral.'},
+  {id:'a4',pid:'PT-00839',disease:'COPD',                 pct:61,type:'watch',dept:'Pulmonology',         device:'RSP-0001',time:'08:52',ack:false,pulse:false, action:'Schedule spirometry (FEV1/FVC) and review current inhaler therapy.'},
+  {id:'a5',pid:'PT-00840',disease:'Kidney Disease',       pct:43,type:'watch',dept:'Infectious Disease',  device:'RSP-0002',time:'09:10',ack:false,pulse:false, action:'Order eGFR blood panel and urinalysis within 2 weeks.'},
+  {id:'a6',pid:'PT-00836',disease:'Respiratory Infection',pct:78,type:'flag', dept:'Emergency Medicine', device:'RSP-0003',time:'08:30',ack:true, pulse:false, action:'Review antibiotic eligibility and monitor temperature and oxygen saturation.'},
+  {id:'a7',pid:'PT-00838',disease:'Liver Disease',        pct:38,type:'watch',dept:'General Medicine',    device:'RSP-0006',time:'07:15',ack:true, pulse:false, action:'Order liver function tests (LFT) and arrange follow-up consultation.'},
+];
+
+let alertFilter='all';
+
+function setAlertFilter(btn, filter){
+  alertFilter=filter;
+  document.querySelectorAll('#view-alerts .f-pill').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  renderAlerts();
+}
+
+function renderAlerts(){
+  const feed=document.getElementById('alert-feed');
+  if(!feed) return;
+  let data=alertData;
+  if(alertFilter==='flag')   data=data.filter(a=>a.type==='flag');
+  else if(alertFilter==='watch')  data=data.filter(a=>a.type==='watch');
+  else if(alertFilter==='unread') data=data.filter(a=>!a.ack);
+
+  feed.innerHTML='';
+  if(!data.length){
+    feed.innerHTML='<p style="color:var(--grey-text);font-size:14px;padding:20px 0;">No alerts match this filter.</p>';
+    return;
+  }
+  data.forEach(a=>{
+    const item=document.createElement('div');
+    item.className=`alert-item ${a.type}${a.ack?' ack':''}${a.pulse&&!a.ack?' new-pulse':''}`;
+    item.innerHTML=`
+      <div class="alert-bar"></div>
+      <div class="alert-body">
+        <div class="alert-row1">
+          <span class="alert-pid">${a.pid}</span>
+          <span class="alert-time">${a.time}</span>
+        </div>
+        <div class="alert-row2">
+          <span class="badge ${a.type==='flag'?'b-flag':'b-watch'}">${a.type.toUpperCase()}</span>
+          <i data-lucide="${diseaseIcons[a.disease]||'activity'}" class="alert-dis-icon ${a.type}"></i>
+          <span class="alert-disease">${a.disease}</span>
+          <span class="alert-pct">${a.pct}% conf.</span>
+        </div>
+        <div class="alert-row3">
+          <span class="alert-dept-tag">${a.dept} · ${a.device}</span>
+        </div>
+        <div class="alert-action">${a.action}</div>
+      </div>
+      <div class="alert-ack-col">
+        <button class="ack-btn${a.ack?' done':''}" onclick="acknowledge('${a.id}',event)">${a.ack?'Reviewed':'Acknowledge'}</button>
+      </div>`;
+    feed.appendChild(item);
+  });
+  if(window.lucide) lucide.createIcons();
+}
+
+function acknowledge(id, e){
+  e.stopPropagation();
+  const a=alertData.find(x=>x.id===id);
+  if(a){ a.ack=true; a.pulse=false; }
+  renderAlerts();
+  updateBadge();
+}
+
+function markAllReviewed(){
+  alertData.forEach(a=>{ a.ack=true; a.pulse=false; });
+  renderAlerts();
+  updateBadge();
+  showToast('All alerts marked as reviewed.');
+}
+
+function updateBadge(){
+  const unread=alertData.filter(a=>!a.ack).length;
+  const badge=document.getElementById('alert-badge');
+  if(unread>0){ badge.textContent=unread; badge.classList.remove('hidden'); }
+  else { badge.classList.add('hidden'); }
+}
+
+/* ══════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════ */
+renderHistoryTable(historyData.filter(r=>r.daysAgo<=6));
+renderDevices();
+renderAlerts();
+updateBadge();
+if(window.lucide) lucide.createIcons();
+// Position nav highlight on the initially active button
+requestAnimationFrame(()=>updateNavHighlight(document.getElementById('nb-clinical')));
+</script>
+</body>
+</html>
